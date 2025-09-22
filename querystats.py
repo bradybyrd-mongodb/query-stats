@@ -51,7 +51,8 @@ def query_stats():
     if "seed" not in ARGS:
         previous_data = load_previous_data(collection)
         differences = compare_results(result, previous_data)
-        collection.insert_many(differences)
+        if len(differences) > 0:
+            collection.insert_many(differences)
     update_run_id(cur_run_id, ts, db_logger)
     source_conn.close()
     conn.close()
@@ -271,8 +272,13 @@ def client_connection(dtype = "uri", details = {}):
     if "username" in details:
         username = details["username"]
         password = details["password"]
-    if "%" not in password:
-        password = urllib.parse.quote_plus(password)
+    try:
+        if "%" not in password:
+            password = urllib.parse.quote_plus(password)
+    except Exception as e:
+        print(f'Error: {e}')
+        print("Set the password environment variable, e.g. _PWD_=yourpassword")
+        exit(1)
     mdb_conn = mdb_conn.replace("//", f'//{username}:{password}@')
     bb.logit(f'Connecting: {mdb_conn}')
     if "readPreference" in details:

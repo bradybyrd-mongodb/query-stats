@@ -40,12 +40,7 @@ A simple React/Node.js web application that connects to MongoDB and displays dat
 
 3. **Configure database connection**:
 
-   **Option 1 (Recommended): Use environment variables**
-   ```bash
-   # Copy the example environment file
-   cp .env.example .env
-
-   # Edit .env and set your MongoDB password
+   # Create an environment variable to set your MongoDB password
    MONGODB_PWD=your-actual-password
    ```
 
@@ -57,12 +52,6 @@ A simple React/Node.js web application that connects to MongoDB and displays dat
        "database": "your-database-name"
      }
    }
-   ```
-
-   **Option 2: Override entire URI**
-   ```bash
-   # Set the complete MongoDB URI in .env
-   MONGODB_URI=mongodb+srv://user:password@cluster.mongodb.net
    ```
 
 ## Usage
@@ -160,17 +149,8 @@ The server provides the following REST API endpoints:
 
 ### Environment Variables
 
-**Server Configuration:**
-- `NODE_ENV` - Set to `production` for production builds
-- `PORT` - Override server port (defaults to settings.json value)
-
 **MongoDB Configuration:**
 - `MONGODB_PWD` - MongoDB password (replaces `<secret>` in settings.json URI)
-- `MONGODB_DATABASE` - Override database name from settings.json
-- `MONGODB_URI` - Complete MongoDB URI (overrides settings.json URI entirely)
-
-**Security:**
-- `CORS_ORIGIN` - Override CORS origin for API requests
 
 ## Features in Detail
 

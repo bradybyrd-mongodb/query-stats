@@ -1,6 +1,6 @@
 {
   "mongodb": {
-    "uri": "mongodb+srv://main_admin:<secret>@m10basicagain-vmwqj.mongodb.net",
+    "uri": "mongodb+srv://main_admin:<secret>@8-native.vmwqj.mongodb.net",
     "database": "monitorstats",
     "collection": "stats_output",
     "options": {
