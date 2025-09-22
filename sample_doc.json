@@ -1,0 +1,102 @@
+{
+  "_id": "685d5ed2806e0061ab419505",
+  "key": {
+    "queryShape": {
+      "cmdNs": {
+        "db": "local",
+        "coll": "oplog.rs"
+      },
+      "command": "aggregate",
+      "pipeline": [
+        {
+          "$collStats": {
+            "storageStats": {
+              "verbose": false,
+              "waitForLock": false,
+              "numericOnly": true
+            }
+          }
+        }
+      ]
+    },
+    "collectionType": "collection",
+    "cursor": {
+      "batchSize": "?number"
+    }
+  },
+  "keyHash": "2QLBfL0m1lliStdN4XvBjqVBtZQ6ffaB2L1pJ99twT8=",
+  "queryShapeHash": "1D0D04A43DC0D262BF58287C35D5333AA389FCE43CC1C75CB9295456CB11198E",
+  "metrics": {
+    "lastExecutionMicros": 331,
+    "execCount": 8844,
+    "totalExecMicros": {
+      "sum": 2938579,
+      "max": 9026,
+      "min": 284,
+      "sumOfSquares": "1081352635"
+    },
+    "firstResponseExecMicros": {
+      "sum": 2938579,
+      "max": 9026,
+      "min": 284,
+      "sumOfSquares": "1081352635"
+    },
+    "docsReturned": {
+      "sum": 8844,
+      "max": 1,
+      "min": 1,
+      "sumOfSquares": "8844"
+    },
+    "keysExamined": {
+      "sum": 0,
+      "max": 0,
+      "min": 0,
+      "sumOfSquares": "0"
+    },
+    "docsExamined": {
+      "sum": 0,
+      "max": 0,
+      "min": 0,
+      "sumOfSquares": "0"
+    },
+    "bytesRead": {
+      "sum": 0,
+      "max": 0,
+      "min": 0,
+      "sumOfSquares": "0"
+    },
+    "readTimeMicros": {
+      "sum": 0,
+      "max": 0,
+      "min": 0,
+      "sumOfSquares": "0"
+    },
+    "workingTimeMillis": {
+      "sum": 16,
+      "max": 9,
+      "min": 0,
+      "sumOfSquares": "102"
+    },
+    "hasSortStage": {
+      "true": 0,
+      "false": 8844
+    },
+    "usedDisk": {
+      "true": 0,
+      "false": 8844
+    },
+    "fromMultiPlanner": {
+      "true": 0,
+      "false": 8844
+    },
+    "fromPlanCache": {
+      "true": 0,
+      "false": 8844
+    },
+    "firstSeenTimestamp": "2025-06-26T12:25:22.001Z",
+    "latestSeenTimestamp": "2025-06-26T14:52:45.000Z"
+  },
+  "asOf": "2025-06-26T14:52:45.554Z",
+  "timestamp": "2025-06-26T10:52:45.599Z",
+  "counter": 0
+}

@@ -1,0 +1,26 @@
+{
+  "mongodb": {
+    "uri": "mongodb+srv://main_admin:<secret>@m10basicagain-vmwqj.mongodb.net",
+    "database": "monitorstats",
+    "collection": "stats_output",
+    "options": {
+      "serverSelectionTimeoutMS": 10000,
+      "connectTimeoutMS": 10000,
+      "socketTimeoutMS": 30000,
+      "retryWrites": true,
+      "retryReads": true
+    }
+  },
+  "server": {
+    "port": 3001,
+    "cors": {
+      "origin": "http://localhost:3000",
+      "credentials": true
+    }
+  },
+  "app": {
+    "name": "MongoDB QueryStats Viewer",
+    "version": "1.0.0",
+    "description": "Simple React app to view MongoDB query statistics"
+  }
+}

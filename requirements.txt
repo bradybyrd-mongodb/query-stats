@@ -1,0 +1,10 @@
+# MongoDB QueryStats Python Dependencies
+# Core MongoDB driver and DNS resolution
+pymongo>=4.6.0
+dnspython>=2.4.0
+
+# Additional dependencies for the main querystats.py script
+# (Most other imports are from Python standard library)
+
+# Note: The script also imports from a custom bbutil module
+# which is now available in the main directory
