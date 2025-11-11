@@ -100,7 +100,7 @@ def update_run_id(run_id, run_time, db):
 
 def lookup_hash(query_hash, data):
     for item in data:
-        if item["queryShapeHash"] == query_hash:
+        if item["keyHash"] == query_hash:
             return item
     return None
 
@@ -143,7 +143,7 @@ def compare_results(current_data, previous_data):
     print("# -------------------------------------------------------------------------- #")
     print(f'# ----- FROM: {previous_data[0]["run_timestamp"]} TO: {current_data[0]["run_timestamp"]} ----- #')
     for item in current_data:
-        query_hash = item.get('queryShapeHash', '')
+        query_hash = item.get('keyHash', '')
         cur_db = item["key"]["queryShape"]["cmdNs"]["db"]
         if cur_db != settings["match_database"]:
             print(f"DB: {cur_db} - skipping")
@@ -173,7 +173,7 @@ def compare_results(current_data, previous_data):
                 print(f"# ---------------------------- Current ---------------------------- #")
                 pprint.pprint(item["metrics"])
                 diff_doc = {
-                    "queryShapeHash": query_hash,
+                    "keyHash": query_hash,
                     "namespace": item["key"]["queryShape"]["cmdNs"]["db"] + "." + item["key"]["queryShape"]["cmdNs"]["coll"],
                     "client": f'{driver} on {item["key"]["client"]["os"]["type"]}',
                     "command": cmd_type,
