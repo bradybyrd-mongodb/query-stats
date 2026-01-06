@@ -34,9 +34,10 @@ def query_stats():
     conn, db_logger = client_connection("logger")
     ts = datetime.datetime.now()
     coll = settings["database"]["logger"]["collection"]
+    match_db = {"key.queryShape.cmdNs.db": settings["match_database"]}
     collection = db_logger[coll]
     cur_run_id = generate_run_id()
-    result = list(execute_command(db_source))
+    result = list(execute_command(db_source, match_db))
     n = 0
     bulk_arr = []
     for item in result:
@@ -47,7 +48,8 @@ def query_stats():
         bulk_arr.append(item)
         n += 1
     collection.insert_many(bulk_arr)
-    print(f"Saved {n} records, run_id: {cur_run_id}")
+    if not QUIET:
+        print(f"Saved {n} records, run_id: {cur_run_id}")
     if "seed" not in ARGS:
         previous_data = load_previous_data(collection)
         differences = compare_results(result, previous_data)
@@ -58,18 +60,27 @@ def query_stats():
     conn.close()
     return result
 
+def query_stats_test():
+    source_conn, db_source = client_connection("source")  
+    ts = datetime.datetime.now()
+    match_db = {"key.queryShape.cmdNs.db": settings["match_database"]}
+    result = list(execute_command(db_source, match_db))
+    print("# --------------------------- Query Stats Output ---------------------------------- #")
+    pprint.pprint(result)
+    
 def query_stats_feed():
     # Generates stats on a timer
     # First time generate stats twice for difference
     query_stats()
     time.sleep(2)
-    print("Performing 100 iterations, sleeping 5 minutes between each")
+    interval = settings["interval_seconds"]
+    print(f"Performing 100 iterations, sleeping {interval} seconds between each")
     for k in range(100):
         query_stats()
-        print(f"Sleeping for 5 minutes, {k} of 100")
-        time.sleep(5*60)
+        if not QUIET:
+            print(f"Sleeping... {k} of 100")
+        time.sleep(interval)
         
-
 def load_previous_data(coll):
     """Load previous queryStats data from storage file"""
     cur_id = ""
@@ -82,8 +93,9 @@ def load_previous_data(coll):
             print(f"Warning: Could not load previous data: {e}")
             return ""
         result = list(coll.find({"run_id" : cur_id.strip()}))
-        print(f'Finding previous run_id: {cur_id}')
-        print(f'Found {len(result)} records')
+        if not QUIET:
+            print(f'Finding previous run_id: {cur_id}')
+            print(f'Found {len(result)} records')
     return result
 
 def update_run_id(run_id, run_time, db):
@@ -140,13 +152,15 @@ def compare_results(current_data, previous_data):
     timestamp = datetime.datetime.now().isoformat()
     diff = ""
     diff_docs = []
-    print("# -------------------------------------------------------------------------- #")
-    print(f'# ----- FROM: {previous_data[0]["run_timestamp"]} TO: {current_data[0]["run_timestamp"]} ----- #')
+    if not QUIET:
+        print("# -------------------------------------------------------------------------- #")
+        print(f'# ----- FROM: {previous_data[0]["run_timestamp"]} TO: {current_data[0]["run_timestamp"]} ----- #')
     for item in current_data:
         query_hash = item.get('keyHash', '')
         cur_db = item["key"]["queryShape"]["cmdNs"]["db"]
         if cur_db != settings["match_database"]:
-            print(f"DB: {cur_db} - skipping")
+            if not QUIET:
+                print(f"DB: {cur_db} - skipping")
             continue
         elif settings["match_driver"] not in item["key"]["client"]["driver"]["name"]:
             continue
@@ -155,23 +169,26 @@ def compare_results(current_data, previous_data):
             match_item = lookup_hash(query_hash, previous_data)
             cmd_type = item["key"]["queryShape"]["command"]
             if match_item:
-                print(f"Matching: {query_hash} - found")
+                if not QUIET:
+                    print(f"Matching: {query_hash} - found")
                 diff = calculate_diff(item["metrics"], match_item["metrics"])
-                print(f'DB: {cur_db}, Collection: {item["key"]["queryShape"]["cmdNs"]["coll"]}')
-                print(f'From: {driver} on {item["key"]["client"]["os"]["type"]}')
-                print(f'Type: {cmd_type}')
+                if not QUIET:
+                    print(f'DB: {cur_db}, Collection: {item["key"]["queryShape"]["cmdNs"]["coll"]}')
+                    print(f'From: {driver} on {item["key"]["client"]["os"]["type"]}')
+                    print(f'Type: {cmd_type}')
                 pretty_query = ""
                 if cmd_type == "aggregate":
                     pretty_query = pprint.pformat(item["key"]["queryShape"]["pipeline"])
                 else:
                     pretty_query = pprint.pformat(item["key"]["queryShape"]["filter"])
-                print(pretty_query)
-                print(f"# ---------------------------- Diff ---------------------------- #")
-                pprint.pprint(diff)
-                print(f"# ---------------------------- Previous ---------------------------- #")
-                pprint.pprint(match_item["metrics"])
-                print(f"# ---------------------------- Current ---------------------------- #")
-                pprint.pprint(item["metrics"])
+                if not QUIET:
+                    print(pretty_query)
+                    print(f"# ---------------------------- Diff ---------------------------- #")
+                    pprint.pprint(diff)
+                    print(f"# ---------------------------- Previous ---------------------------- #")
+                    pprint.pprint(match_item["metrics"])
+                    print(f"# ---------------------------- Current ---------------------------- #")
+                    pprint.pprint(item["metrics"])
                 diff_doc = {
                     "keyHash": query_hash,
                     "namespace": item["key"]["queryShape"]["cmdNs"]["db"] + "." + item["key"]["queryShape"]["cmdNs"]["coll"],
@@ -187,7 +204,8 @@ def compare_results(current_data, previous_data):
                 }
                 diff_docs.append(diff_doc)
             else:
-                print(f"Matching: {query_hash} - not found")
+                if not QUIET:
+                    print(f"Matching: {query_hash} - not found")
     
     return diff_docs
 
@@ -239,9 +257,13 @@ def generate_report(run_id):
 #----------------------------------------------------------------------#
 #   Utility Routines
 #----------------------------------------------------------------------#
-def execute_command(db):
+def execute_command(db, filter = {}):
     # gather stats from the admin db
-    cmd = [{"$queryStats": {}}]
+    if filter == {}:
+        cmd = [{"$queryStats": {}}]
+    else:
+        cmd = [{"$queryStats": {}},
+           {"$match": filter}]
     result = db.aggregate(cmd)
     return result
 
@@ -280,7 +302,8 @@ def client_connection(dtype = "uri", details = {}):
         print("Set the password environment variable, e.g. _PWD_=yourpassword")
         exit(1)
     mdb_conn = mdb_conn.replace("//", f'//{username}:{password}@')
-    bb.logit(f'Connecting: {mdb_conn}')
+    if not QUIET:
+        bb.logit(f'Connecting: {mdb_conn}')
     if "readPreference" in details:
         client = MongoClient(mdb_conn, readPreference=details["readPreference"]) #&w=majority
     else:
@@ -292,10 +315,13 @@ def client_connection(dtype = "uri", details = {}):
 #     MAIN
 #------------------------------------------------------------------#
 if __name__ == "__main__":
+    QUIET = False
     bb = Util()
     ARGS = bb.process_args(sys.argv)
     settings = bb.read_json(settings_file)
     base_counter = settings["base_counter"]
+    if "quiet" in ARGS:
+        QUIET = True
     if "wait" in ARGS:
         interval = int(ARGS["wait"])
         if interval > 10:
@@ -306,7 +332,10 @@ if __name__ == "__main__":
         sys.exit(1)
     elif ARGS["action"] == "stats":
         query_stats()
+    elif ARGS["action"] == "stats_test":
+        query_stats_test()
     elif ARGS["action"] == "stats_feed":
+        # python3 querystats.py action=stats_feed quiet=yes
         query_stats_feed()
     else:
         print(f'{ARGS["action"]} not found')

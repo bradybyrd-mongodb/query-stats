@@ -2,6 +2,8 @@
 
 A simple React/Node.js web application that connects to MongoDB and displays database collections and queryStats results in an interactive table format.
 
+- Update 1/6/26:  1) Added interval_seconds parameter to settings.json.  This is the number of seconds to wait between runs of the queryStats.py script.  2) The queryStats aggregation now includes a patch stage to limit the results to the settings["match_database"], 3) A quiet=yes option will suppress all but the title output to the console.
+
 ## Features
 
 - **Database Connection**: Connects to MongoDB using settings from `settings.json`
