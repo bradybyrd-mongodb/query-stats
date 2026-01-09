@@ -19,6 +19,7 @@ This script will gather queryStats data from a MongoDB cluster and display the d
     b. update the database.logger section with your MongoDB connection information for the cluster you want to store the results
     c. Update the match_namespace array in the settings.json file with the namespaces you want to monitor.  Namespaces are in the format "database.collection"
     d. Set the interval_seconds parameter to the number of seconds you want to wait between runs of the queryStats.py script
+5. Update the webapp/settings.json file with your MongoDB connection information for the cluster you want to query for results in the webapp
 5. Source you python virtual environment e.g.
 ```bash
 source venv/bin/activate
