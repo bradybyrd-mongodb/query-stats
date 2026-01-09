@@ -76,8 +76,11 @@ def match_criteria():
     # "match_namespace": ["healthcare.member","healthcare.policy"]
     ex = {"$or": [{"key.queryShape.cmdNs.db": "healthcare", "key.queryShape.cmdNs.coll": "member"}]}
     for it in match_db:
-        clause["key.queryShape.cmdNs.coll"] = it.split(".")[1]
-        clause["key.queryShape.cmdNs.db"] = it.split(".")[0]
+        if len(it.split(".")) < 2:
+            clause["key.queryShape.cmdNs.db"] = it
+        else:
+            clause["key.queryShape.cmdNs.coll"] = it.split(".")[1]
+            clause["key.queryShape.cmdNs.db"] = it.split(".")[0]
         answer["$or"].append(copy.deepcopy(clause))
         clause = {}
             
