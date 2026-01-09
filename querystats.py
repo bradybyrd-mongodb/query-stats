@@ -34,10 +34,10 @@ def query_stats():
     conn, db_logger = client_connection("logger")
     ts = datetime.datetime.now()
     coll = settings["database"]["logger"]["collection"]
-    match_db = {"key.queryShape.cmdNs.db": settings["match_database"]}
+    match_clause = match_criteria()
     collection = db_logger[coll]
     cur_run_id = generate_run_id()
-    result = list(execute_command(db_source, match_db))
+    result = list(execute_command(db_source, match_clause))
     n = 0
     bulk_arr = []
     for item in result:
@@ -63,10 +63,25 @@ def query_stats():
 def query_stats_test():
     source_conn, db_source = client_connection("source")  
     ts = datetime.datetime.now()
-    match_db = {"key.queryShape.cmdNs.db": settings["match_database"]}
-    result = list(execute_command(db_source, match_db))
+    match_clause = match_criteria()
+    result = list(execute_command(db_source, match_clause))
+    print(f'Matching: {match_clause}')
     print("# --------------------------- Query Stats Output ---------------------------------- #")
     pprint.pprint(result)
+
+def match_criteria():
+    match_db = settings["match_namespace"]
+    clause = {}
+    answer = {"$or": []}
+    # "match_namespace": ["healthcare.member","healthcare.policy"]
+    ex = {"$or": [{"key.queryShape.cmdNs.db": "healthcare", "key.queryShape.cmdNs.coll": "member"}]}
+    for it in match_db:
+        clause["key.queryShape.cmdNs.coll"] = it.split(".")[1]
+        clause["key.queryShape.cmdNs.db"] = it.split(".")[0]
+        answer["$or"].append(copy.deepcopy(clause))
+        clause = {}
+            
+    return answer
     
 def query_stats_feed():
     # Generates stats on a timer
@@ -77,6 +92,8 @@ def query_stats_feed():
     print(f"Performing 100 iterations, sleeping {interval} seconds between each")
     for k in range(100):
         query_stats()
+        if "feed" in ARGS:
+            break
         if not QUIET:
             print(f"Sleeping... {k} of 100")
         time.sleep(interval)
@@ -158,54 +175,47 @@ def compare_results(current_data, previous_data):
     for item in current_data:
         query_hash = item.get('keyHash', '')
         cur_db = item["key"]["queryShape"]["cmdNs"]["db"]
-        if cur_db != settings["match_database"]:
+        driver = item["key"]["client"]["driver"]["name"]
+        match_item = lookup_hash(query_hash, previous_data)
+        cmd_type = item["key"]["queryShape"]["command"]
+        if match_item:
             if not QUIET:
-                print(f"DB: {cur_db} - skipping")
-            continue
-        elif settings["match_driver"] not in item["key"]["client"]["driver"]["name"]:
-            continue
-        else:
-            driver = item["key"]["client"]["driver"]["name"]
-            match_item = lookup_hash(query_hash, previous_data)
-            cmd_type = item["key"]["queryShape"]["command"]
-            if match_item:
-                if not QUIET:
-                    print(f"Matching: {query_hash} - found")
-                diff = calculate_diff(item["metrics"], match_item["metrics"])
-                if not QUIET:
-                    print(f'DB: {cur_db}, Collection: {item["key"]["queryShape"]["cmdNs"]["coll"]}')
-                    print(f'From: {driver} on {item["key"]["client"]["os"]["type"]}')
-                    print(f'Type: {cmd_type}')
-                pretty_query = ""
-                if cmd_type == "aggregate":
-                    pretty_query = pprint.pformat(item["key"]["queryShape"]["pipeline"])
-                else:
-                    pretty_query = pprint.pformat(item["key"]["queryShape"]["filter"])
-                if not QUIET:
-                    print(pretty_query)
-                    print(f"# ---------------------------- Diff ---------------------------- #")
-                    pprint.pprint(diff)
-                    print(f"# ---------------------------- Previous ---------------------------- #")
-                    pprint.pprint(match_item["metrics"])
-                    print(f"# ---------------------------- Current ---------------------------- #")
-                    pprint.pprint(item["metrics"])
-                diff_doc = {
-                    "keyHash": query_hash,
-                    "namespace": item["key"]["queryShape"]["cmdNs"]["db"] + "." + item["key"]["queryShape"]["cmdNs"]["coll"],
-                    "client": f'{driver} on {item["key"]["client"]["os"]["type"]}',
-                    "command": cmd_type,
-                    "query": pretty_query,
-                    "start_timestamp": match_item["run_timestamp"],
-                    "end_timestamp": item["run_timestamp"],
-                    "run_id": item["run_id"],
-                    "metrics": diff,
-                    "doc_type": "result"
-                    
-                }
-                diff_docs.append(diff_doc)
+                print(f"Matching: {query_hash} - found")
+            diff = calculate_diff(item["metrics"], match_item["metrics"])
+            if not QUIET:
+                print(f'DB: {cur_db}, Collection: {item["key"]["queryShape"]["cmdNs"]["coll"]}')
+                print(f'From: {driver} on {item["key"]["client"]["os"]["type"]}')
+                print(f'Type: {cmd_type}')
+            pretty_query = ""
+            if cmd_type == "aggregate":
+                pretty_query = pprint.pformat(item["key"]["queryShape"]["pipeline"])
             else:
-                if not QUIET:
-                    print(f"Matching: {query_hash} - not found")
+                pretty_query = pprint.pformat(item["key"]["queryShape"]["filter"])
+            if not QUIET:
+                print(pretty_query)
+                print(f"# ---------------------------- Diff ---------------------------- #")
+                pprint.pprint(diff)
+                print(f"# ---------------------------- Previous ---------------------------- #")
+                pprint.pprint(match_item["metrics"])
+                print(f"# ---------------------------- Current ---------------------------- #")
+                pprint.pprint(item["metrics"])
+            diff_doc = {
+                "keyHash": query_hash,
+                "namespace": item["key"]["queryShape"]["cmdNs"]["db"] + "." + item["key"]["queryShape"]["cmdNs"]["coll"],
+                "client": f'{driver} on {item["key"]["client"]["os"]["type"]}',
+                "command": cmd_type,
+                "query": pretty_query,
+                "start_timestamp": match_item["run_timestamp"],
+                "end_timestamp": item["run_timestamp"],
+                "run_id": item["run_id"],
+                "metrics": diff,
+                "doc_type": "result"
+                
+            }
+            diff_docs.append(diff_doc)
+        else:
+            if not QUIET:
+                print(f"Matching: {query_hash} - not found")
     
     return diff_docs
 
