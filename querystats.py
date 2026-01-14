@@ -138,25 +138,36 @@ def lookup_hash(query_hash, data):
 
 def calculate_diff(current, previous):
     diff = {}
+    res = True
+    if "no-diff" in ARGS:
+        res = False
     for key in current:
         if key in previous:
             if isinstance(current[key], dict) and "sum" in current[key]:
                 diff[key] = {}
                 for field in ["sum", "sumOfSquares"]:
                     if field == "sumOfSquares":
-                        diff[key][field] = int(current[key][field].to_decimal()) - int(previous[key][field].to_decimal())
+                        diff[key][field] = int(current[key][field].to_decimal())
+                        if res:
+                            diff[key][field] -= int(previous[key][field].to_decimal())
                     else:
-                        diff[key][field] = current[key][field] - previous[key][field]
+                        diff[key][field] = current[key][field]
+                        if res:
+                            diff[key][field] -= previous[key][field]
                 diff[key]["max"] = current[key]["max"]
                 diff[key]["min"] = current[key]["min"]
             elif isinstance(current[key], dict) and "true" in current[key]:
                 diff[key] = {}
                 for field in ["true", "false"]:
-                    diff[key][field] = current[key][field] - previous[key][field]
+                    diff[key][field] = current[key][field]
+                    if res:
+                        diff[key][field] -= previous[key][field]
             elif(key in ["firstSeenTimestamp", "latestSeenTimestamp"]):
                 diff[key] = current[key]
             else:
-                diff[key] = current[key] - previous[key]
+                diff[key] = current[key]
+                if res:
+                    diff[key] -= previous[key]
         else:
             diff[key] = current[key]
     return diff
